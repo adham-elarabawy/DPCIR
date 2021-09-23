@@ -42,7 +42,7 @@ def main():
     model_name = 'drunet_gray'           # set denoiser model, 'drunet_gray' | 'drunet_color'
     testset_name = 'regular'             # set test set,  'bsd68' | 'cbsd68' | 'set12'
     x8 = False                           # default: False, x8 to boost performance
-    show_img = True                     # default: False
+    show_img = False                     # default: False
     border = 0                           # shave boader to calculate PSNR and SSIM
 
     if 'color' in model_name:
@@ -111,6 +111,7 @@ def main():
         img_L += np.random.normal(0, noise_level_img/255., img_L.shape)
 
         util.imshow(util.single2uint(img_L), title='Noisy image with noise level {}'.format(noise_level_img)) if show_img else None
+        util.imsave(util.single2uint(img_L), os.path.join(E_path, img_name + f'_noisy{noise_level_img}_' + ext))
 
         img_L = util.single2tensor4(img_L)
         img_L = torch.cat((img_L, torch.FloatTensor([noise_level_model/255.]).repeat(1, 1, img_L.shape[2], img_L.shape[3])), dim=1)
@@ -119,6 +120,8 @@ def main():
         # ------------------------------------
         # (2) img_E
         # ------------------------------------
+
+        print()
 
         if not x8 and img_L.size(2)//8==0 and img_L.size(3)//8==0:
             img_E = model(img_L)
@@ -147,7 +150,7 @@ def main():
         # save results
         # ------------------------------------
 
-        util.imsave(img_E, os.path.join(E_path, img_name+ext))
+        util.imsave(img_E, os.path.join(E_path, img_name + f'_denoised{noise_level_img}_' + ext))
 
     ave_psnr = sum(test_results['psnr']) / len(test_results['psnr'])
     ave_ssim = sum(test_results['ssim']) / len(test_results['ssim'])
