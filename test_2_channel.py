@@ -40,15 +40,17 @@ def main():
     noise_level_img = 25                 # set AWGN noise level for noisy image
     noise_level_model = noise_level_img  # set noise level for model
     model_name = 'drunet_gray'           # set denoiser model, 'drunet_gray' | 'drunet_color'
-    testset_name = 'regular'             # set test set,  'bsd68' | 'cbsd68' | 'set12'
+    testset_name = 'experiment'             # set test set,  'bsd68' | 'cbsd68' | 'set12'
     x8 = False                           # default: False, x8 to boost performance
     show_img = True                     # default: False
     border = 0                           # shave boader to calculate PSNR and SSIM
 
-    if 'color' in model_name:
-        n_channels = 3                   # 3 for color image
-    else:
-        n_channels = 1                   # 1 for grayscale image
+    # if 'color' in model_name:
+    #     n_channels = 3                   # 3 for color image
+    # else:
+    #     n_channels = 1                   # 1 for grayscale image
+
+    n_channels = 3
 
     model_pool = 'model_zoo'             # fixed
     testsets = 'testsets'                # fixed
@@ -94,17 +96,20 @@ def main():
     logger.info('model_name:{}, model sigma:{}, image sigma:{}'.format(model_name, noise_level_img, noise_level_model))
     logger.info(L_path)
     L_paths = util.get_image_paths(L_path)
+    L_paths = util.get_raw_paths(L_path)
 
     for idx, img in enumerate(L_paths):
-
+        print(img)
         # ------------------------------------
         # (1) img_L
         # ------------------------------------
 
         img_name, ext = os.path.splitext(os.path.basename(img))
         # logger.info('{:->4d}--> {:>10s}'.format(idx+1, img_name+ext))
-        img_H = util.imread_uint(img, n_channels=n_channels)
-        img_L = util.uint2single(img_H)
+        img_H = np.load(img)
+        # img_H = util.imread_uint(img, n_channels=n_channels)
+
+        img_L = img_H
 
         # Add noise without clipping
         np.random.seed(seed=0)  # for reproducibility

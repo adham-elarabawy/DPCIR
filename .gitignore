@@ -2,3 +2,4 @@
 /testsets/
 .DS_Store
 /results/*
+.ipynb_checkpoints/*

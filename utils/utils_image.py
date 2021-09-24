@@ -69,6 +69,12 @@ def get_image_paths(dataroot):
         paths = sorted(_get_paths_from_images(dataroot))
     return paths
 
+def get_raw_paths(dataroot):
+    paths = None  # return None if dataroot is None
+    if dataroot is not None:
+        paths = sorted(_get_paths(dataroot))
+    return paths
+
 
 def _get_paths_from_images(path):
     assert os.path.isdir(path), '{:s} is not a valid directory'.format(path)
@@ -79,6 +85,16 @@ def _get_paths_from_images(path):
                 img_path = os.path.join(dirpath, fname)
                 images.append(img_path)
     assert images, '{:s} has no valid image file'.format(path)
+    return images
+
+def _get_paths(path):
+    assert os.path.isdir(path), '{:s} is not a valid directory'.format(path)
+    images = []
+    for dirpath, _, fnames in sorted(os.walk(path)):
+        for fname in sorted(fnames):
+            img_path = os.path.join(dirpath, fname)
+            images.append(img_path)
+    assert images, '{:s} has no valid file'.format(path)
     return images
 
 
