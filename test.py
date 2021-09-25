@@ -113,21 +113,28 @@ def main():
         util.imshow(util.single2uint(img_L), title='Noisy image with noise level {}'.format(noise_level_img)) if show_img else None
         util.imsave(util.single2uint(img_L), os.path.join(E_path, img_name + f'_noisy{noise_level_img}_' + ext))
 
+        # reshapes the input as (1, 1, sizeX, sizeY)
         img_L = util.single2tensor4(img_L)
+        # adds the noise level map to the image as an extra channel
         img_L = torch.cat((img_L, torch.FloatTensor([noise_level_model/255.]).repeat(1, 1, img_L.shape[2], img_L.shape[3])), dim=1)
+        # move the image to the gpu memory
         img_L = img_L.to(device)
 
-        # ------------------------------------
+
+    # ------------------------------------
         # (2) img_E
         # ------------------------------------
 
         print()
 
         if not x8 and img_L.size(2)//8==0 and img_L.size(3)//8==0:
+            print("mode0")
             img_E = model(img_L)
         elif not x8 and (img_L.size(2)//8!=0 or img_L.size(3)//8!=0):
+            print("mode1")
             img_E = utils_model.test_mode(model, img_L, refield=64, mode=5)
         elif x8:
+            print("mode2")
             img_E = utils_model.test_mode(model, img_L, mode=3)
 
         img_E = util.tensor2uint(img_E)

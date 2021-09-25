@@ -62,7 +62,6 @@ def surf(Z):
 # =======================================
 '''
 
-
 def get_image_paths(dataroot):
     paths = None  # return None if dataroot is None
     if dataroot is not None:

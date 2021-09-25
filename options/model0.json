@@ -1,0 +1,29 @@
+{
+  "gpu_ids": [0],
+
+  "numChannels": 1,
+  "sigma": [0, 50],
+  "sigma_test": 25,
+
+  "datasets": {
+    "train": "",
+    "test": ""
+  },
+
+  "model": {
+    "in_numChannels": 2,
+    "out_numChannels": 1,
+    "nc": [64, 128, 256, 512]
+  },
+
+  "training": {
+    "seed": 1234,
+    "batch_size": 64,
+    "patch_res": 128,
+    "num_workers": 8,
+
+    "checkpoint_test": 5000,
+    "checkpoint_save": 5000,
+    "checkpoint_print": 200
+  }
+}

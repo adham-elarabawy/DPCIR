@@ -3,7 +3,7 @@ import torch
 from models.unet import UNetRes
 from torch.optim import Adam
 from torch.nn import L1Loss
-from utils import utils_option as option
+from utils import util, datasets
 import argparse
 import random
 import numpy as np
@@ -15,13 +15,10 @@ model = UNetRes()
 # get config parameters
 parser = argparse.ArgumentParser()
 parser.add_argument('--opt', type=str, required=True, help='Path to option JSON file.')
-opt = option.parse(parser.parse_args().opt, is_train=True)
-
-# clean up input dict
-opt = option.dict_to_nonedict(opt)
+opt = util.parse(parser.parse_args().opt)
 
 # config seed
-seed = opt['train']['manual_seed']
+seed = opt['training']['seed']
 if seed is None:
     seed = random.randint(1, 10000)
 print('Random seed: {}'.format(seed))
@@ -36,14 +33,102 @@ loss_fn = L1Loss()
 # Define Adam Optimizer
 optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0)
 
+# Create Datasets
+train_set = datasets.DatasetPatchNoise(opt)
+
 # Define Training Dataloader
 train_loader = DataLoader(train_set,
-                          batch_size=dataset_opt['dataloader_batch_size'],
-                          shuffle=dataset_opt['dataloader_shuffle'],
-                          num_workers=dataset_opt['dataloader_num_workers'],
+                          batch_size=opt['training']['batch_size'],
+                          num_workers=opt['training']['num_workers'],
+                          shuffle=True,
                           drop_last=True,
                           pin_memory=True)
 
+'''
+# ----------------------------------------
+# Step--4 (main training)
+# ----------------------------------------
+'''
+current_step = 0
+for epoch in range(1000000):  # keep running
+    for i, train_data in enumerate(train_loader):
+
+        current_step += 1
+
+        # -------------------------------
+        # 1) update learning rate
+        # -------------------------------
+        model.update_learning_rate(current_step)
+
+        # -------------------------------
+        # 2) feed patch pairs
+        # -------------------------------
+        model.feed_data(train_data)
+
+        # -------------------------------
+        # 3) optimize parameters
+        # -------------------------------
+        model.optimize_parameters(current_step)
+
+        # -------------------------------
+        # 4) training information
+        # -------------------------------
+        if current_step % opt['train']['checkpoint_print'] == 0 and opt['rank'] == 0:
+            logs = model.current_log()  # such as loss
+            message = '<epoch:{:3d}, iter:{:8,d}, lr:{:.3e}> '.format(epoch, current_step, model.current_learning_rate())
+            for k, v in logs.items():  # merge log information into message
+                message += '{:s}: {:.3e} '.format(k, v)
+            logger.info(message)
+
+        # -------------------------------
+        # 5) save model
+        # -------------------------------
+        if current_step % opt['train']['checkpoint_save'] == 0 and opt['rank'] == 0:
+            logger.info('Saving the model.')
+            model.save(current_step)
+
+        # -------------------------------
+        # 6) testing
+        # -------------------------------
+        if current_step % opt['train']['checkpoint_test'] == 0 and opt['rank'] == 0:
+
+            avg_psnr = 0.0
+            idx = 0
+
+            for test_data in test_loader:
+                idx += 1
+                image_name_ext = os.path.basename(test_data['L_path'][0])
+                img_name, ext = os.path.splitext(image_name_ext)
+
+                img_dir = os.path.join(opt['path']['images'], img_name)
+                util.mkdir(img_dir)
+
+                model.feed_data(test_data)
+                model.test()
+
+                visuals = model.current_visuals()
+                E_img = util.tensor2uint(visuals['E'])
+                H_img = util.tensor2uint(visuals['H'])
+
+                # -----------------------
+                # save estimated image E
+                # -----------------------
+                save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(img_name, current_step))
+                util.imsave(E_img, save_img_path)
+
+                # -----------------------
+                # calculate PSNR
+                # -----------------------
+                current_psnr = util.calculate_psnr(E_img, H_img, border=border)
+
+                logger.info('{:->4d}--> {:>10s} | {:<4.2f}dB'.format(idx, image_name_ext, current_psnr))
+
+                avg_psnr += current_psnr
+
+            avg_psnr = avg_psnr / idx
+
+            # testing log
+            logger.info('<epoch:{:3d}, iter:{:8,d}, Average PSNR : {:<.2f}dB\n'.format(epoch, current_step, avg_psnr))
 
 
 # Function to save the model
@@ -51,74 +136,3 @@ def saveModel():
     path = "./myFirstModel.pth"
     torch.save(model.state_dict(), path)
 
-# Function to test the model with the test dataset and print the accuracy for the test images
-def testAccuracy():
-
-    model.eval()
-    accuracy = 0.0
-    total = 0.0
-
-    with torch.no_grad():
-        for data in test_loader:
-            images, labels = data
-            # run the model on the test set to predict labels
-            outputs = model(images)
-            # the label with the highest energy will be our prediction
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            accuracy += (predicted == labels).sum().item()
-
-    # compute the accuracy over all test images
-    accuracy = (100 * accuracy / total)
-    return(accuracy)
-
-
-# Training function. We simply have to loop over our data iterator and feed the inputs to the network and optimize.
-def train(num_epochs):
-
-    best_accuracy = 0.0
-
-    # Define your execution device
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print("The model will be running on", device, "device")
-    # Convert model parameters and buffers to CPU or Cuda
-    model.to(device)
-
-    for epoch in range(num_epochs):  # loop over the dataset multiple times
-        running_loss = 0.0
-        running_acc = 0.0
-
-        for i, (images, labels) in enumerate(train_loader, 0):
-
-            # get the inputs
-            images = Variable(images.to(device))
-            labels = Variable(labels.to(device))
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-            # predict classes using images from the training set
-            outputs = model(images)
-            # compute the loss based on model output and real labels
-            loss = loss_fn(outputs, labels)
-            # backpropagate the loss
-            loss.backward()
-            # adjust parameters based on the calculated gradients
-            optimizer.step()
-
-            # Let's print statistics for every 1,000 images
-            running_loss += loss.item()     # extract the loss value
-            if i % 1000 == 999:
-                # print every 1000 (twice per epoch)
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 1000))
-                # zero the loss
-                running_loss = 0.0
-
-        # Compute and print the average accuracy fo this epoch when tested over all 10000 test images
-        accuracy = testAccuracy()
-        print('For epoch', epoch+1,'the test accuracy over the whole test set is %d %%' % (accuracy))
-
-        # we want to save the model if the accuracy is the best
-        if accuracy > best_accuracy:
-            saveModel()
-            best_accuracy = accuracy

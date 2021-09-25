@@ -42,12 +42,12 @@ def parse(opt_path, is_train=True):
     # ----------------------------------------
     # set default
     # ----------------------------------------
-    if 'merge_bn' not in opt:
-        opt['merge_bn'] = False
-        opt['merge_bn_startpoint'] = -1
-
-    if 'scale' not in opt:
-        opt['scale'] = 1
+    # if 'merge_bn' not in opt:
+    #     opt['merge_bn'] = False
+    #     opt['merge_bn_startpoint'] = -1
+    #
+    # if 'scale' not in opt:
+    #     opt['scale'] = 1
 
     # ----------------------------------------
     # datasets
