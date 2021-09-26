@@ -15,7 +15,7 @@ class DatasetPatchNoise(data.Dataset):
     # -----------------------------------------
     """
 
-    def __init__(self, opt):
+    def __init__(self, opt, train=True):
 
         super(DatasetPatchNoise, self).__init__()
         self.opt = opt
@@ -24,12 +24,16 @@ class DatasetPatchNoise(data.Dataset):
         self.sigma = opt['sigma']
         self.sigma_min, self.sigma_max = self.sigma[0], self.sigma[1]
         self.sigma_test = opt['sigma_test']
-        self.train_path = opt['datasets']['train']
+        self.train = train
+        if self.train:
+            self.im_path = opt['datasets']['train']
+        else:
+            self.im_path = opt['datasets']['test']
 
         # -------------------------------------
         # get the path of H, return None if input is None
         # -------------------------------------
-        self.paths_H = util.get_image_paths(self.train_path)
+        self.paths_H = util.get_image_paths(self.im_path)
 
     def __getitem__(self, index):
         # -------------------------------------
@@ -40,7 +44,7 @@ class DatasetPatchNoise(data.Dataset):
 
         L_path = H_path
 
-        if True:
+        if self.train:
             """
             # --------------------------------
             # get L/H/M patch pairs

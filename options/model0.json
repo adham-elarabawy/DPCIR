@@ -30,7 +30,8 @@
     "lr_period": 100000,
     "lr_gamma": 0.5,
 
-    "checkpoint_path": "checkpoints/model0",
+    "checkpoint_save_path": "checkpoints/model0/models",
+    "checkpoint_test_path": "checkpoints/model0/testing",
 
     "checkpoint_test": 5000,
     "checkpoint_save": 5000,

@@ -4,6 +4,7 @@ from models.unet import UNetRes
 from torch.optim import Adam
 from torch.nn import L1Loss
 from utils import util, datasets
+from collections import OrderedDict
 import argparse
 import random
 import numpy as np
@@ -53,7 +54,8 @@ lr_gamma = opt['training']['lr_gamma']
 scheduler = StepLR(optimizer, step_size=lr_period, gamma=lr_gamma)
 
 # Create Datasets
-train_set = datasets.DatasetPatchNoise(opt)
+train_set = datasets.DatasetPatchNoise(opt, train=True)
+test_set = datasets.DatasetPatchNoise(opt, train=False)
 
 # Define Training Dataloader
 train_loader = DataLoader(train_set,
@@ -62,6 +64,14 @@ train_loader = DataLoader(train_set,
                           shuffle=True,
                           drop_last=True,
                           pin_memory=True)
+
+# Define Testing Dataloader
+test_loader = DataLoader(test_set,
+                         batch_size=1,
+                         num_workers=1,
+                         shuffle=False,
+                         drop_last=False,
+                         pin_memory=True)
 
 
 # move model to GPU
@@ -115,7 +125,7 @@ for epoch in range(1000000):  # keep running
         # -------------------------------
         if currStep % opt['training']['checkpoint_save'] == 0:
             print('Saving the model.')
-            path_to_save_checkpoint = opt['training']['checkpoint_path'] + str(currStep) + '.pt'
+            path_to_save_checkpoint = opt['training']['checkpoint_save_path'] + str(currStep) + '.pt'
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
@@ -127,7 +137,54 @@ for epoch in range(1000000):  # keep running
         # 6) testing
         # -------------------------------
 
-# # Function to save the model
-# def saveModel():
-#     path = "./myFirstModel.pth"
-#     torch.save(model.state_dict(), path)
+        if currStep % opt['training']['checkpoint_test'] == 0:
+
+            avg_psnr = 0.0
+            idx = 0
+
+            for test_data in test_loader:
+                idx += 1
+                image_name_ext = os.path.basename(test_data['L_path'][0])
+                img_name, ext = os.path.splitext(image_name_ext)
+
+                img_dir = os.path.join(opt['training']['checkpoint_test_path'], img_name)
+                util.mkdir(img_dir)
+
+                # feed data
+                noisy        = test_data['L'].to(device) # noisy image [augmented]
+                ground_truth = test_data['H'].to(device) # clean image [ground truth]
+
+                # test model
+                model.eval()
+                with torch.no_grad():
+                    output = model(noisy)
+                model.train()
+
+                # get the visuals
+                visuals = OrderedDict()
+                visuals['L'] = noisy.detach()[0].float().cpu()
+                visuals['E'] = output.detach()[0].float().cpu()
+                visuals['H'] = ground_truth.detach()[0].float().cpu()
+
+                visuals = model.current_visuals()
+                E_img = util.tensor2uint(visuals['E'])
+                H_img = util.tensor2uint(visuals['H'])
+
+                # -----------------------
+                # save estimated image E
+                # -----------------------
+                save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(img_name, currStep))
+                util.imsave(E_img, save_img_path)
+
+                # -----------------------
+                # calculate PSNR
+                # -----------------------
+                current_psnr = util.calculate_psnr(E_img, H_img, border=1)
+
+                avg_psnr += current_psnr
+
+            avg_psnr = avg_psnr / idx
+
+            # testing log
+            log = f'epoch: {epoch}, step: {currStep}, Average PSNR: {avg_psnr}'
+            print(log)
