@@ -100,8 +100,6 @@ for epoch in range(1000000):  # keep running
         noisy        = train_data['L'].to(device) # noisy image [augmented]
         ground_truth = train_data['H'].to(device) # clean image [ground truth]
 
-        print(noisy.shape)
-
         # -------------------------------
         # 2) optimize parameters
         # -------------------------------
@@ -157,8 +155,6 @@ for epoch in range(1000000):  # keep running
                 # feed data
                 noisy        = test_data['L'].to(device) # noisy image [augmented]
                 ground_truth = test_data['H'].to(device) # clean image [ground truth]
-
-                print(noisy.shape)
 
                 # test model
                 model.eval()
