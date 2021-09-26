@@ -159,7 +159,7 @@ for epoch in range(1000000):  # keep running
                 # test model
                 model.eval()
                 with torch.no_grad():
-                    output = model.forward(noisy)
+                    output = model.forward(noisy, isTest=True)
                 model.train()
 
                 # get the visuals

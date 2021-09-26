@@ -47,7 +47,12 @@ class UNetRes(nn.Module):
 
         self.m_tail = B.conv(nc[0], out_nc, bias=False, mode='C')
 
-    def forward(self, x0):
+    def forward(self, x0, isTest = False):
+        if isTest:
+            h, w = x0.size()[-2:]
+            paddingBottom = int(np.ceil(h/8)*8-h)
+            paddingRight = int(np.ceil(w/8)*8-w)
+            x = nn.ReplicationPad2d((0, paddingRight, 0, paddingBottom))(x0)
         x1 = self.m_head(x0)
         x2 = self.m_down1(x1)
         x3 = self.m_down2(x2)
