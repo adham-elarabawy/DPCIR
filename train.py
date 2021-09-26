@@ -75,12 +75,14 @@ test_loader = DataLoader(test_set,
 
 
 # move model to GPU
-if 'gpu' in opt and torch.cuda.is_available():
+if 'gpu_ids' in opt and torch.cuda.is_available():
     device = torch.device("cuda")
     print(f"[Logging] Using GPU {str(device)}")
 else:
     device = torch.device("cpu")
     print("[Logging] Using CPU")
+
+model = model.to(device)
 
 '''
 # ----------------------------------------
@@ -117,7 +119,7 @@ for epoch in range(1000000):  # keep running
         # 4) training information
         # -------------------------------
         if currStep % opt['training']['checkpoint_print'] == 0:
-            log = f'epoch: {epoch}, step: {currStep}, lr: {scheduler.get_lr()}, loss: {loss}'
+            log = f'epoch: {epoch}, step: {currStep}, lr: {scheduler.get_last_lr()}, loss: {loss}'
             print(log)
 
         # -------------------------------

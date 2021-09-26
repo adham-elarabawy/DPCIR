@@ -6,8 +6,8 @@
   "sigma_test": 25,
 
   "datasets": {
-    "train": "",
-    "test": ""
+    "train": "/mikQNAP/aelarabawy/DPCIR/train/DIV2K/DIV2K_train_HR",
+    "test": "/mikQNAP/aelarabawy/DIV2K_valid_HR"
   },
 
   "model": {
