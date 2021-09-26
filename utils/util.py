@@ -6,6 +6,7 @@ import re
 import glob
 import numpy as np
 import math
+import cv2
 
 def parse(opt_path, is_train=True):
 
@@ -61,3 +62,16 @@ def calculate_psnr(img1, img2, border=0):
 def mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
+
+# convert 2/3/4-dimensional torch tensor to uint
+def tensor2uint(img):
+    img = img.data.squeeze().float().clamp_(0, 1).cpu().numpy()
+    if img.ndim == 3:
+        img = np.transpose(img, (1, 2, 0))
+    return np.uint8((img*255.0).round())
+
+def imsave(img, img_path):
+    img = np.squeeze(img)
+    if img.ndim == 3:
+        img = img[:, :, [2, 1, 0]]
+    cv2.imwrite(img_path, img)

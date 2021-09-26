@@ -92,7 +92,6 @@ model = model.to(device)
 currStep = 0
 for epoch in range(1000000):  # keep running
     for i, train_data in enumerate(train_loader):
-        print("in loop")
 
         # -------------------------------
         # 1) get patch pairs
@@ -170,6 +169,14 @@ for epoch in range(1000000):  # keep running
 
                 E_img = util.tensor2uint(visuals['E'])
                 H_img = util.tensor2uint(visuals['H'])
+
+                x_diff = abs(H_img.shape[0] - E_img.shape[0]) // 2
+                y_diff = abs(H_img.shape[1] - E_img.shape[1]) // 2
+
+                if x_diff:
+                    E_img = E_img[x_diff:-x_diff, :]
+                if y_diff:
+                    E_img = E_img[:, y_diff:-y_diff]
 
                 # -----------------------
                 # save estimated image E

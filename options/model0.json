@@ -1,5 +1,5 @@
 {
-  "gpu_ids": [0],
+  "gpu_ids": [1],
 
   "numChannels": 1,
   "sigma": [0, 50],
@@ -35,6 +35,6 @@
 
     "checkpoint_test": 5000,
     "checkpoint_save": 5000,
-    "checkpoint_print": 200
+    "checkpoint_print": 10
   }
 }
