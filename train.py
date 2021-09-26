@@ -80,14 +80,20 @@ for epoch in range(1000000):  # keep running
         print("in loop")
 
         # -------------------------------
-        # 1) feed patch pairs
+        # 1) get patch pairs
         # -------------------------------
-
+        noisy        = train_data['L'].to(device) # noisy image [augmented]
+        ground_truth = train_data['H'].to(device) # clean image [ground truth]
 
         # -------------------------------
         # 2) optimize parameters
         # -------------------------------
+        optimizer.zero_grad()
+        output = model.forward(noisy)
+        loss = loss_fn(output, ground_truth)
+        loss.backward()
 
+        optimizer.step()
 
         # -------------------------------
         # 3) update learning rate
