@@ -9,12 +9,15 @@ import random
 import numpy as np
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import StepLR
+import os
 
 
 # get config parameters
 parser = argparse.ArgumentParser()
 parser.add_argument('--opt', type=str, required=True, help='Path to option JSON file.')
+opt_filename = os.path.basename(parser.parse_args().opt).split('.')[0] # get options filename
 opt = util.parse(parser.parse_args().opt)
+
 
 # config seed
 seed = opt['training']['seed']
@@ -74,7 +77,7 @@ else:
 # Step--4 (main training)
 # ----------------------------------------
 '''
-
+currStep = 0
 for epoch in range(1000000):  # keep running
     for i, train_data in enumerate(train_loader):
         print("in loop")
@@ -100,16 +103,25 @@ for epoch in range(1000000):  # keep running
         # -------------------------------
         scheduler.step()
 
-
         # -------------------------------
         # 4) training information
         # -------------------------------
-
+        if currStep % opt['training']['checkpoint_print'] == 0:
+            log = f'epoch: {epoch}, step: {currStep}, lr: {scheduler.get_lr()}, loss: {loss}'
+            print(log)
 
         # -------------------------------
         # 5) save model
         # -------------------------------
-
+        if currStep % opt['training']['checkpoint_save'] == 0:
+            print('Saving the model.')
+            path_to_save_checkpoint = opt['training']['checkpoint_path'] + str(currStep) + '.pt'
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+            }, path_to_save_checkpoint)
 
         # -------------------------------
         # 6) testing
@@ -119,4 +131,3 @@ for epoch in range(1000000):  # keep running
 # def saveModel():
 #     path = "./myFirstModel.pth"
 #     torch.save(model.state_dict(), path)
-
