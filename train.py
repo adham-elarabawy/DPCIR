@@ -168,7 +168,6 @@ for epoch in range(1000000):  # keep running
                 visuals['E'] = output.detach()[0].float().cpu()
                 visuals['H'] = ground_truth.detach()[0].float().cpu()
 
-                visuals = model.current_visuals()
                 E_img = util.tensor2uint(visuals['E'])
                 H_img = util.tensor2uint(visuals['H'])
 
