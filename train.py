@@ -185,6 +185,10 @@ for epoch in range(1000000):  # keep running
 
             avg_psnr = avg_psnr / idx
 
+            with open(opt['training']['checkpoint_save_path'] + "test_metrics.txt", 'a') as f: f.write(f"step:{currStep},avg_psnr:{avg_psnr}\n")
+
             # testing log
             log = f'epoch: {epoch}, step: {currStep}, Average PSNR: {avg_psnr}'
             print(log)
+
+        currStep += 1
