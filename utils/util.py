@@ -24,7 +24,8 @@ def parse(opt_path, is_train=True):
     # ----------------------------------------
     # Expanding paths
     # ----------------------------------------
-    opt['train'] = os.path.expanduser(opt['train'])
+    opt['datasets']['train'] = os.path.expanduser(opt['datasets']['train'])
+    opt['datasets']['test'] = os.path.expanduser(opt['datasets']['test'])
 
     # ----------------------------------------
     # GPU devices

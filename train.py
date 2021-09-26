@@ -8,6 +8,7 @@ import argparse
 import random
 import numpy as np
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import StepLR
 
 
 # get config parameters
@@ -43,6 +44,11 @@ loss_fn = L1Loss()
 # Define Adam Optimizer
 optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0)
 
+# Define learning rate scheduler
+lr_period = opt['training']['lr_period']
+lr_gamma = opt['training']['lr_gamma']
+scheduler = StepLR(optimizer, step_size=lr_period, gamma=lr_gamma)
+
 # Create Datasets
 train_set = datasets.DatasetPatchNoise(opt)
 
@@ -54,29 +60,39 @@ train_loader = DataLoader(train_set,
                           drop_last=True,
                           pin_memory=True)
 
+
+# move model to GPU
+if 'gpu' in opt and torch.cuda.is_available():
+    device = torch.device("cuda")
+    print(f"[Logging] Using GPU {str(device)}")
+else:
+    device = torch.device("cpu")
+    print("[Logging] Using CPU")
+
 '''
 # ----------------------------------------
 # Step--4 (main training)
 # ----------------------------------------
 '''
-current_step = 0
+
 for epoch in range(1000000):  # keep running
     for i, train_data in enumerate(train_loader):
-
-
-        # -------------------------------
-        # 1) update learning rate
-        # -------------------------------
-
+        print("in loop")
 
         # -------------------------------
-        # 2) feed patch pairs
+        # 1) feed patch pairs
         # -------------------------------
 
 
         # -------------------------------
-        # 3) optimize parameters
+        # 2) optimize parameters
         # -------------------------------
+
+
+        # -------------------------------
+        # 3) update learning rate
+        # -------------------------------
+        scheduler.step()
 
 
         # -------------------------------
@@ -93,8 +109,8 @@ for epoch in range(1000000):  # keep running
         # 6) testing
         # -------------------------------
 
-# Function to save the model
-def saveModel():
-    path = "./myFirstModel.pth"
-    torch.save(model.state_dict(), path)
+# # Function to save the model
+# def saveModel():
+#     path = "./myFirstModel.pth"
+#     torch.save(model.state_dict(), path)
 
