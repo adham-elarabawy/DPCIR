@@ -76,7 +76,7 @@ test_loader = DataLoader(test_set,
 
 # move model to GPU
 if 'gpu_ids' in opt and torch.cuda.is_available():
-    device = torch.device("cuda")
+    device = torch.device("cuda:3")
     print(f"[Logging] Using GPU {str(device)}")
 else:
     device = torch.device("cpu")
@@ -92,7 +92,6 @@ model = model.to(device)
 currStep = 0
 for epoch in range(1000000):  # keep running
     for i, train_data in enumerate(train_loader):
-
         # -------------------------------
         # 1) get patch pairs
         # -------------------------------
@@ -120,6 +119,9 @@ for epoch in range(1000000):  # keep running
         if currStep % opt['training']['checkpoint_print'] == 0:
             log = f'epoch: {epoch}, step: {currStep}, lr: {scheduler.get_last_lr()}, loss: {loss}'
             print(log)
+        if currStep % opt['training']['checkpoint_log_loss'] == 0:
+            with open(opt['training']['checkpoint_save_path'] + "train_metrics.txt", 'a') as f: f.write(f"step:{currStep},loss:{loss}\n")
+
 
         # -------------------------------
         # 5) save model

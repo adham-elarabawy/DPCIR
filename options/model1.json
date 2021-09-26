@@ -1,5 +1,5 @@
 {
-  "gpu_ids": [2],
+  "gpu_ids": [3],
 
   "numChannels": 1,
   "sigma": [0, 50],
