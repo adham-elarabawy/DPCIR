@@ -9,8 +9,6 @@ import random
 import numpy as np
 from torch.utils.data import DataLoader
 
-# Instantiate a neural network model
-model = UNetRes()
 
 # get config parameters
 parser = argparse.ArgumentParser()
@@ -26,6 +24,18 @@ random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
+
+# Instantiate a neural network model
+in_nc  = opt['model']['in_numChannels']   # number of input channels
+out_nc = opt['model']['out_numChannels']  # number of output channels
+nc     = opt['model']['nc']               # feature map dims for each subsequent resblock set (match the dim of nb)
+nb     = opt['model']['numResBlocks']     # number of res blocks in each downsample stage
+
+upsample_mode   = opt['model']['upsample_mode']
+downsample_mode = opt['model']['downsample_mode']
+act_mode        = opt['model']['act_mode']
+
+model = UNetRes(in_nc=in_nc, out_nc=1, nc=nc, nb=nb, act_mode=act_mode, downsample_mode=downsample_mode, upsample_mode=upsample_mode)
 
 # Define L1 Loss Function
 loss_fn = L1Loss()
