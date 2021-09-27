@@ -10,6 +10,7 @@ import random
 import numpy as np
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import StepLR
+from torch.utils.tensorboard import SummaryWriter
 import os
 
 
@@ -30,6 +31,9 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 
+# Instantiate Tensorboard instance
+tb = SummaryWriter()
+
 # Instantiate a neural network model
 in_nc  = opt['model']['in_numChannels']   # number of input channels
 out_nc = opt['model']['out_numChannels']  # number of output channels
@@ -40,6 +44,7 @@ upsample_mode   = opt['model']['upsample_mode']
 downsample_mode = opt['model']['downsample_mode']
 act_mode        = opt['model']['act_mode']
 
+# Define model
 model = UNetRes(in_nc=in_nc, out_nc=1, nc=nc, nb=nb, act_mode=act_mode, downsample_mode=downsample_mode, upsample_mode=upsample_mode)
 
 # Define L1 Loss Function
@@ -91,6 +96,7 @@ model = model.to(device)
 '''
 currStep = 0
 for epoch in range(1000000):  # keep running
+    total_loss = 0
     for i, train_data in enumerate(train_loader):
         # -------------------------------
         # 1) get patch pairs
@@ -194,11 +200,15 @@ for epoch in range(1000000):  # keep running
                 avg_psnr += current_psnr
 
             avg_psnr = avg_psnr / idx
-
+            tb.add_scalar("[Testing] Average PSNR", avg_psnr, epoch)
             with open(opt['training']['checkpoint_save_path'] + "test_metrics.txt", 'a') as f: f.write(f"step:{currStep},avg_psnr:{avg_psnr}\n")
 
             # testing log
             log = f'epoch: {epoch}, step: {currStep}, Average PSNR: {avg_psnr}'
             print(log)
-
+        total_loss += loss
         currStep += 1
+
+    tb.add_scalar("[Training] Loss", total_loss, epoch)
+tb.close()
+
