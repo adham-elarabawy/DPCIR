@@ -175,6 +175,7 @@ for epoch in range(1000000):  # keep running
                 visuals['E'] = output.detach()[0].float().cpu()
                 visuals['H'] = ground_truth.detach()[0].float().cpu()
 
+                L_img = util.tensor2uint(visuals['L'])
                 E_img = util.tensor2uint(visuals['E'])
                 H_img = util.tensor2uint(visuals['H'])
 
@@ -187,10 +188,10 @@ for epoch in range(1000000):  # keep running
                     E_img = E_img[:, y_diff:-y_diff]
 
                 # -----------------------
-                # save estimated image E
+                # save estimated image E and noisy version
                 # -----------------------
-                save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(img_name, currStep))
-                util.imsave(E_img, save_img_path)
+                util.imsave(L_img, os.path.join(img_dir, '{:s}_{:d}_L.png'.format(img_name, currStep)))
+                util.imsave(E_img, os.path.join(img_dir, '{:s}_{:d}_E.png'.format(img_name, currStep)))
 
                 # -----------------------
                 # calculate PSNR
