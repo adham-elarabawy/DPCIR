@@ -20,7 +20,6 @@ parser.add_argument('--opt', type=str, required=True, help='Path to option JSON 
 opt_filename = os.path.basename(parser.parse_args().opt).split('.')[0] # get options filename
 opt = util.parse(parser.parse_args().opt)
 
-
 # config seed
 seed = opt['training']['seed']
 if seed is None:
@@ -32,7 +31,12 @@ torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 
 # Instantiate Tensorboard instance
-tb = SummaryWriter()
+log_dir = os.path.join(opt['logging']['tb_logdir'], opt_filename)
+
+util.mkdir(log_dir)
+
+tb_train = SummaryWriter(os.path.join(log_dir, 'train'))
+tb_eval  = SummaryWriter(os.path.join(log_dir, 'eval'))
 
 # Instantiate a neural network model
 numChannels = opt['numChannels']
@@ -130,7 +134,9 @@ for epoch in range(1000000):  # keep running
             log = f'epoch: {epoch}, step: {currStep}, lr: {scheduler.get_last_lr()}, loss: {loss}'
             print(log)
         if currStep % opt['training']['checkpoint_log_loss'] == 0:
-            with open(opt['training']['checkpoint_save_path'] + "train_metrics.txt", 'a') as f: f.write(f"step:{currStep},loss:{loss}\n")
+            train_metrics_path = os.path.join(opt['training']['checkpoint_save_path'], "train_metrics.txt")
+            util.mkdir(train_metrics_path)
+            with open(train_metrics_path, 'a') as f: f.write(f"step:{currStep},loss:{loss}\n")
 
 
         # -------------------------------
@@ -154,6 +160,7 @@ for epoch in range(1000000):  # keep running
         if currStep % opt['training']['checkpoint_test'] == 0:
 
             avg_psnr = 0.0
+            eval_loss = 0.0
             idx = 0
 
             for test_data in test_loader:
@@ -172,6 +179,7 @@ for epoch in range(1000000):  # keep running
                 model.eval()
                 with torch.no_grad():
                     output = model.forward(noisy, isTest=True)
+                    eval_loss += loss_fn(output, ground_truth)
                 model.train()
 
                 # get the visuals
@@ -197,6 +205,10 @@ for epoch in range(1000000):  # keep running
                 # -----------------------
                 util.imsave(E_img, os.path.join(img_dir, '{:s}_{:d}_E.png'.format(img_name, currStep)))
 
+                tb_eval.add_images("Input", L_img, epoch)
+                tb_eval.add_images("Output", E_img, epoch)
+                tb_eval.add_images("Ground Truth", H_img, epoch)
+
                 # -----------------------
                 # calculate PSNR
                 # -----------------------
@@ -205,8 +217,12 @@ for epoch in range(1000000):  # keep running
                 avg_psnr += current_psnr
 
             avg_psnr = avg_psnr / idx
-            tb.add_scalar("[Testing] Average PSNR", avg_psnr, epoch)
-            with open(opt['training']['checkpoint_save_path'] + "test_metrics.txt", 'a') as f: f.write(f"step:{currStep},avg_psnr:{avg_psnr}\n")
+            eval_loss = eval_loss / idx
+            tb_eval.add_scalar("[Testing] Average PSNR", avg_psnr, epoch)
+            tb_eval.add_scalar("Loss", eval_loss, epoch)
+            test_metrics_path = os.path.join(opt['training']['checkpoint_save_path'], "test_metrics.txt")
+            util.mkdir(test_metrics_path)
+            with open(test_metrics_path, 'a') as f: f.write(f"step:{currStep},avg_psnr:{avg_psnr}\n")
 
             # testing log
             log = f'epoch: {epoch}, step: {currStep}, Average PSNR: {avg_psnr}'
@@ -214,6 +230,7 @@ for epoch in range(1000000):  # keep running
         total_loss += loss
         currStep += 1
 
-    tb.add_scalar("[Training] Loss", total_loss, epoch)
-tb.close()
+    tb_train.add_scalar("Loss", total_loss, epoch)
+tb_train.close()
+tb_eval.close()
 

@@ -37,5 +37,9 @@
     "checkpoint_save": 5000,
     "checkpoint_print": 10,
     "checkpoint_log_loss": 1000
+  },
+
+  "logging": {
+    "tb_logdir": "runs/"
   }
 }
