@@ -85,7 +85,7 @@ test_loader = DataLoader(test_set,
 
 # move model to GPU
 if 'gpu_ids' in opt and torch.cuda.is_available():
-    device = torch.device("cuda:3")
+    device = torch.device("cuda:" + str(opt['gpu_ids'][0]))
     print(f"[Logging] Using GPU {str(device)}")
 else:
     device = torch.device("cpu")
