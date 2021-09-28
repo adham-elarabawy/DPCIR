@@ -4,3 +4,7 @@
 /results/*
 .ipynb_checkpoints/*
 *__pycache__*
+checkpoints/
+*.png
+runs/
+train/

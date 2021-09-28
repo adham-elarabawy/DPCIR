@@ -51,7 +51,7 @@ model = UNetRes(in_nc=in_nc, out_nc=1, nc=nc, nb=nb, act_mode=act_mode, downsamp
 loss_fn = L1Loss()
 
 # Define Adam Optimizer
-optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0)
+optimizer = Adam(model.parameters(), lr=opt['training']['learning_rate'], weight_decay=0)
 
 # Define learning rate scheduler
 lr_period = opt['training']['lr_period']
@@ -190,7 +190,6 @@ for epoch in range(1000000):  # keep running
                 # -----------------------
                 # save estimated image E and noisy version
                 # -----------------------
-                util.imsave(L_img, os.path.join(img_dir, '{:s}_{:d}_L.png'.format(img_name, currStep)))
                 util.imsave(E_img, os.path.join(img_dir, '{:s}_{:d}_E.png'.format(img_name, currStep)))
 
                 # -----------------------

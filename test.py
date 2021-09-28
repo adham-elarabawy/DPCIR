@@ -39,16 +39,17 @@ def main():
 
     noise_level_img = 25                 # set AWGN noise level for noisy image
     noise_level_model = noise_level_img  # set noise level for model
-    model_name = 'drunet_gray'           # set denoiser model, 'drunet_gray' | 'drunet_color'
+    model_name = "model2_5000"
+    model_path = '/mikQNAP/aelarabawy/DPCIR/checkpoints/model2/models5000.pt'           # set denoiser model, 'drunet_gray' | 'drunet_color'
     testset_name = 'regular'             # set test set,  'bsd68' | 'cbsd68' | 'set12'
     x8 = False                           # default: False, x8 to boost performance
     show_img = True                     # default: False
     border = 0                           # shave boader to calculate PSNR and SSIM
 
-    if 'color' in model_name:
-        n_channels = 3                   # 3 for color image
-    else:
-        n_channels = 1                   # 1 for grayscale image
+#    if 'color' in model_name:
+#        n_channels = 3                   # 3 for color image
+#    else:
+    n_channels = 1                   # 1 for grayscale image
 
     model_pool = 'model_zoo'             # fixed
     testsets = 'testsets'                # fixed
@@ -56,9 +57,10 @@ def main():
     task_current = 'dn'                  # 'dn' for denoising
     result_name = testset_name + '_' + task_current + '_' + model_name
 
-    model_path = os.path.join(model_pool, model_name+'.pth')
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    torch.cuda.empty_cache()
+    # model_path = os.path.join(model_pool, model_name+'.pth')
+    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
+    # torch.cuda.empty_cache()
 
     # ----------------------------------------
     # L_path, E_path, H_path
@@ -110,8 +112,8 @@ def main():
         np.random.seed(seed=0)  # for reproducibility
         img_L += np.random.normal(0, noise_level_img/255., img_L.shape)
 
-        util.imshow(util.single2uint(img_L), title='Noisy image with noise level {}'.format(noise_level_img)) if show_img else None
-        util.imsave(util.single2uint(img_L), os.path.join(E_path, img_name + f'_noisy{noise_level_img}_' + ext))
+        #util.imshow(util.single2uint(img_L), title='Noisy image with noise level {}'.format(noise_level_img)) if show_img else None
+        util.imsave(util.single2uint(img_L), os.path.join(L_path, img_name + f'_noisy{noise_level_img}_' + ext))
 
         # reshapes the input as (1, 1, sizeX, sizeY)
         img_L = util.single2tensor4(img_L)
@@ -138,7 +140,8 @@ def main():
             img_E = utils_model.test_mode(model, img_L, mode=3)
 
         img_E = util.tensor2uint(img_E)
-        util.imshow(img_E, title='De-noised image with noise level {}'.format(noise_level_img)) if show_img else None
+        util.imsave(util.single2uint(img_E), os.path.join(E_path, img_name + f'_denoised{noise_level_img}_' + ext))
+        # util.imshow(img_E, title='De-noised image with noise level {}'.format(noise_level_img)) if show_img else None
 
 
     # --------------------------------
