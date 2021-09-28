@@ -74,5 +74,4 @@ def imsave(img, img_path):
     img = np.squeeze(img)
     if img.ndim == 3:
         img = img[:, :, [2, 1, 0]]
-    else:
     cv2.imwrite(img_path, img)
