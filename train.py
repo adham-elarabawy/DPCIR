@@ -3,6 +3,7 @@ import torch
 from models.unet import UNetRes
 from torch.optim import Adam
 from torch.nn import L1Loss
+import torch.nn as nn
 from utils import util, datasets
 from collections import OrderedDict
 import argparse
@@ -174,6 +175,12 @@ for epoch in range(1000000):  # keep running
                 # feed data
                 noisy        = test_data['L'].to(device) # noisy image [augmented]
                 ground_truth = test_data['H'].to(device) # clean image [ground truth]
+
+                # ensure that our dimensions are divisible by 8 (to make sure our conv + deconv operations are valid)
+                h, w = ground_truth.size()[-2:]
+                paddingBottom = int(np.ceil(h/8)*8-h)
+                paddingRight = int(np.ceil(w/8)*8-w)
+                ground_truth = nn.ReplicationPad2d((0, paddingRight, 0, paddingBottom))(ground_truth)
 
                 # test model
                 model.eval()
