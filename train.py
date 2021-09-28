@@ -136,6 +136,7 @@ for epoch in range(1000000):  # keep running
         if currStep % opt['training']['checkpoint_log_loss'] == 0:
             train_metrics_path = os.path.join(opt['training']['checkpoint_save_path'], "train_metrics.txt")
             util.mkdir(train_metrics_path)
+            print(train_metrics_path)
             with open(train_metrics_path, 'a') as f: f.write(f"step:{currStep},loss:{loss}\n")
 
 
