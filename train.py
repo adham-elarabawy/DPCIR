@@ -145,7 +145,7 @@ for epoch in range(1000000):  # keep running
         if currStep % opt['training']['checkpoint_save'] == 0:
             print('Saving the model.')
             path_to_save_checkpoint = os.path.join(opt['training']['checkpoint_save_path'], str(currStep) + '.pt')
-            util.mkdir(path_to_save_checkpoint)
+            util.mkdir(opt['training']['checkpoint_save_path'])
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
