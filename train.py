@@ -135,8 +135,7 @@ for epoch in range(1000000):  # keep running
             print(log)
         if currStep % opt['training']['checkpoint_log_loss'] == 0:
             train_metrics_path = os.path.join(opt['training']['checkpoint_save_path'], "train_metrics.txt")
-            util.mkdir(train_metrics_path)
-            print(train_metrics_path)
+            util.mkdir(opt['training']['checkpoint_save_path'])
             with open(train_metrics_path, 'a') as f: f.write(f"step:{currStep},loss:{loss}\n")
 
 
@@ -222,7 +221,7 @@ for epoch in range(1000000):  # keep running
             tb_eval.add_scalar("[Testing] Average PSNR", avg_psnr, epoch)
             tb_eval.add_scalar("Loss", eval_loss, epoch)
             test_metrics_path = os.path.join(opt['training']['checkpoint_save_path'], "test_metrics.txt")
-            util.mkdir(test_metrics_path)
+            util.mkdir(opt['training']['checkpoint_save_path'])
             with open(test_metrics_path, 'a') as f: f.write(f"step:{currStep},avg_psnr:{avg_psnr}\n")
 
             # testing log
