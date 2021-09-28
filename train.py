@@ -35,17 +35,21 @@ torch.cuda.manual_seed_all(seed)
 tb = SummaryWriter()
 
 # Instantiate a neural network model
-in_nc  = opt['model']['in_numChannels']   # number of input channels
-out_nc = opt['model']['out_numChannels']  # number of output channels
-nc     = opt['model']['nc']               # feature map dims for each subsequent resblock set (match the dim of nb)
-nb     = opt['model']['numResBlocks']     # number of res blocks in each downsample stage
+numChannels = opt['numChannels']
+in_nc       = opt['model']['in_numChannels']   # number of input channels
+out_nc      = opt['model']['out_numChannels']  # number of output channels
+nc          = opt['model']['nc']               # feature map dims for each subsequent resblock set (match the dim of nb)
+nb          = opt['model']['numResBlocks']     # number of res blocks in each downsample stage
 
 upsample_mode   = opt['model']['upsample_mode']
 downsample_mode = opt['model']['downsample_mode']
 act_mode        = opt['model']['act_mode']
 
+assert (in_nc == numChannels + 1)
+assert (out_nc == numChannels)
+
 # Define model
-model = UNetRes(in_nc=in_nc, out_nc=1, nc=nc, nb=nb, act_mode=act_mode, downsample_mode=downsample_mode, upsample_mode=upsample_mode)
+model = UNetRes(in_nc=in_nc, out_nc=out_nc, nc=nc, nb=nb, act_mode=act_mode, downsample_mode=downsample_mode, upsample_mode=upsample_mode)
 
 # Define L1 Loss Function
 loss_fn = L1Loss()
