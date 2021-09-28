@@ -212,10 +212,6 @@ for epoch in range(1000000):  # keep running
                 # -----------------------
                 # util.imsave(E_img, os.path.join(img_dir, '{:s}_{:d}_E.png'.format(img_name, currStep)))
 
-                tb_eval.add_images("Input", L_img, epoch)
-                tb_eval.add_images("Output", E_img, epoch)
-                tb_eval.add_images("Ground Truth", H_img, epoch)
-
                 # -----------------------
                 # calculate PSNR
                 # -----------------------
