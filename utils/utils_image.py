@@ -178,6 +178,15 @@ def imread_uint(path, n_channels=3):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # RGB
     return img
 
+def fill_in(img, n_channels=3):
+    init_channels = cv2.split(img)
+    channels = np.array([channel for channel in init_channels])
+    for i in range(n_channels - len(channels)):
+        _ = np.zeros(init_channels[0].shape, dtype='uint8')
+        channels = np.append(channels, [_], axis = 0)
+    merged = cv2.merge(tuple(channels))
+    return merged
+
 
 def imsave(img, img_path):
     img = np.squeeze(img)
