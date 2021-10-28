@@ -19,11 +19,11 @@ class DatasetPatchNoise(data.Dataset):
 
         super(DatasetPatchNoise, self).__init__()
         self.opt = opt
-        self.n_channels = opt['numChannels']
-        self.patch_size = self.opt['training']['patch_res']
+        self.n_channels = opt['models']['numChannels']
+        self.patch_size = self.opt['hyperparams']['patch_res']
         self.sigma = opt['sigma']
         self.sigma_min, self.sigma_max = self.sigma[0], self.sigma[1]
-        self.sigma_test = opt['sigma_test']
+        self.sigma_test = opt['hyperparams']['sigma_test']
         self.train = train
         if self.train:
             self.im_path = opt['datasets']['train']

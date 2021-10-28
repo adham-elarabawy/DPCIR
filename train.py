@@ -211,6 +211,14 @@ if __name__ == '__main__':
     # initialize project tracking
     wandb.init(project="DPCIR", entity=config['logging']['username'])
 
+    wandb.config = {
+        "learning_rate": config['hyperparams']['learning_rate'],
+        "batch_size": config['hyperparams']['batch_size'],
+        "num_channels": config['model']['numChannels'],
+        "sigma": config['hyperparams']['sigma'],
+        "sigma_test": config['hyperparams']['sigma_test']
+    }
+
     # get model
     model = get_model(config)
 
