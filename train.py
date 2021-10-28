@@ -47,7 +47,7 @@ def train(config, model):
     model = model.to(device)
 
     # Keep track of model with wandb
-    wandb.watch(model, loss_fn, optimizer, log="all", log_freq=config[''])
+    wandb.watch(model, loss_fn, optimizer, log="all", log_freq=10)
 
     for epoch in range(config['hyperparams']['epochs']):
         totalLoss = 0
