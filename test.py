@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import torch
 
@@ -11,19 +12,22 @@ from utils import utils_logger
 from utils import utils_model
 from utils import utils_image as util
 
+import sigpy as sp
+
 def main():
 
     # ----------------------------------------
     # Preparation
     # ----------------------------------------
     n_channels = 2
-    noise_level_img = 25                 # set AWGN noise level for noisy image
+    noise_level_img = 0                 # set AWGN noise level for noisy image
     noise_level_model = noise_level_img  # set noise level for model
     model_name = "model3_35000"
     model_path = 'checkpoints/model3/35000.pt'           # set denoiser model, 'drunet_gray' | 'drunet_color'
     testset_name = 'regular'             # set test set,  'bsd68' | 'cbsd68' | 'set12'
     x8 = False                           # default: False, x8 to boost performance
     show_img = True                      # default: False
+    big_visualize = False
     border = 0                           # shave border to calculate PSNR and SSIM
 
     testsets = 'testsets'                # fixed
@@ -70,21 +74,27 @@ def main():
     logger.info(L_path)
     L_paths = util.get_image_paths(L_path)
 
-    for idx, img in enumerate(L_paths):
+    for idx, img in enumerate(L_paths[:1]):
 
         # ------------------------------------
         # (1) img_L
         # ------------------------------------
 
         img_name, ext = os.path.splitext(os.path.basename(img))
-
+        shepp_logan = sp.shepp_logan((640, 640))
+        shepp_logan_split = np.array([shepp_logan.real, shepp_logan.imag])
+        shepp_logan_split = np.moveaxis(shepp_logan_split, 0, -1)
         # get the n_channels image
-        img_H = util.imread_uint(img, n_channels=n_channels)
+        # img_H = util.imread_uint(img, n_channels=n_channels)
+        img_H = shepp_logan_split * 255
+        print(img_H.shape)
         img_L = util.uint2single(img_H)
+
+        print(img_L.shape)
 
         # Add noise without clipping
         np.random.seed(seed=0)  # for reproducibility
-        img_L += np.random.normal(0, noise_level_img/255., img_L.shape)
+        # img_L += np.random.normal(0, noise_level_img/255., img_L.shape)
 
         noisy_im = util.single2uint(img_L)
         # util.imshow(util.fill_in(util.single2uint(img_L)), title='Noisy image with noise level {}'.format(noise_level_img)) if show_img else None
@@ -101,22 +111,30 @@ def main():
         # ------------------------------------
         # (2) img_E
         # ------------------------------------
+        util.imsave(noisy_im[:,:,0], os.path.join(E_path, 'noisy_2.png'))
+        util.imsave(img_H[:,:,0], os.path.join(E_path, 'ground_truth_2.png'))
+        for j in range(30):
+            if not x8 and img_L.size(2)//8==0 and img_L.size(3)//8==0:
+                img_E = model(img_L)
+            elif not x8 and (img_L.size(2)//8!=0 or img_L.size(3)//8!=0):
+                img_E = utils_model.test_mode(model, img_L, refield=64, mode=5)
+            elif x8:
+                img_E = utils_model.test_mode(model, img_L, mode=3)
 
+            img_E_uint = util.tensor2uint(img_E)
+            # ax[0].imshow(noisy_im)
+            # util.imsave(util.single2uint(img_E), os.path.join(E_path, img_name + f'_denoised{noise_level_img}_' + ext))
+            # util.imshow(util.fill_in(img_E), title='De-noised image with noise level {}'.format(noise_level_img)) if show_img else None
 
-        if not x8 and img_L.size(2)//8==0 and img_L.size(3)//8==0:
-            img_E = model(img_L)
-        elif not x8 and (img_L.size(2)//8!=0 or img_L.size(3)//8!=0):
-            img_E = utils_model.test_mode(model, img_L, refield=64, mode=5)
-        elif x8:
-            img_E = utils_model.test_mode(model, img_L, mode=3)
+            print('saving images')
+            util.imsave(img_E_uint[:,:,0], os.path.join(E_path, f'denoised_2_{j}.png'))
+            img_L = img_E
+            # adds the noise level map to the image as an extra channel
+            img_L = torch.cat((img_L, torch.FloatTensor([noise_level_model/255.]).repeat(1, 1, img_L.shape[2], img_L.shape[3])), dim=1)
+            # move the image to the gpu memory
+            img_L = img_L.to(device)
 
-        img_E = util.tensor2uint(img_E)
-        # ax[0].imshow(noisy_im)
-        # util.imsave(util.single2uint(img_E), os.path.join(E_path, img_name + f'_denoised{noise_level_img}_' + ext))
-        # util.imshow(util.fill_in(img_E), title='De-noised image with noise level {}'.format(noise_level_img)) if show_img else None
-
-
-    # --------------------------------
+        # --------------------------------
         # PSNR and SSIM
         # --------------------------------
 
@@ -131,75 +149,114 @@ def main():
         # ------------------------------------
         # display /  results
         # ------------------------------------
-        fig, big_axes = plt.subplots( figsize=(12.0, 12.0) , nrows=4, ncols=1, sharey=True)
-        fig.suptitle(f'\'{model_name}\' Evaluation (PSNR: {psnr})', fontsize=16)
-        for row, big_ax in enumerate(big_axes, start=1):
-            # Turn off axis lines and ticks of the big subplot
-            # obs alpha is 0 in RGBA string!
-            big_ax.tick_params(labelcolor=(1.,1.,1., 0.0), top='off', bottom='off', left='off', right='off')
-            # removes the white frame
-            big_ax._frameon = False
+        if big_visualize:
+            plt.axis("off")
+            fig, big_axes = plt.subplots( figsize=(8.0, 13.0) , nrows=4, ncols=1, sharey=True)
+            fig.suptitle(f'\'{model_name}\' Evaluation (PSNR: {psnr})', fontsize=16)
+            for row, big_ax in enumerate(big_axes, start=1):
+                # Turn off axis lines and ticks of the big subplot
+                # obs alpha is 0 in RGBA string!
+                big_ax.tick_params(labelcolor=(1.,1.,1., 0.0), top='off', bottom='off', left='off', right='off')
+                # removes the white frame
+                big_ax._frameon = False
 
-        big_axes[0].set_title("Noisy\n", fontsize=14)
-        big_axes[1].set_title("Denoised\n", fontsize=14)
-        big_axes[2].set_title("Ground Truth\n", fontsize=14)
-        big_axes[3].set_title("Denoised - Ground Truth\n", fontsize=14)
+            big_axes[0].set_title("Noisy\n", fontsize=14)
+            big_axes[1].set_title("Denoised\n", fontsize=14)
+            big_axes[2].set_title("Ground Truth\n", fontsize=14)
+            big_axes[3].set_title("Denoised - Ground Truth\n", fontsize=14)
 
-        # NOISY
-        ax = fig.add_subplot(4,3,1, aspect=1)
-        ax.imshow(noisy_im[:,:,0])
-        ax.set_title('Channel 1')
+            axes = []
 
-        ax = fig.add_subplot(4,3,2, aspect=1)
-        ax.imshow(noisy_im[:,:,1])
-        ax.set_title('Channel 2')
+            # NOISY
+            ax = fig.add_subplot(4,3,1, aspect=1)
+            ax.axis('off')
+            ax.imshow(noisy_im[:,:,0])
+            ax.set_title('Channel 1')
+            axes.append(ax)
 
-        ax = fig.add_subplot(4,3,3, aspect=1)
-        ax.imshow(util.fill_in(noisy_im))
-        ax.set_title('Combined (zeroed ch3)')
+            ax = fig.add_subplot(4,3,2, aspect=1)
+            ax.axis('off')
+            ax.imshow(noisy_im[:,:,1])
+            ax.set_title('Channel 2')
+            axes.append(ax)
 
-        # DENOISED
-        ax = fig.add_subplot(4,3,4, aspect=1)
-        ax.imshow(img_E[:,:,0])
-        ax.set_title('Channel 1')
+            ax = fig.add_subplot(4,3,3, aspect=1)
+            ax.axis('off')
+            ax.imshow(util.fill_in(noisy_im))
+            ax.set_title('Combined (zeroed ch3)')
+            axes.append(ax)
 
-        ax = fig.add_subplot(4,3,5, aspect=1)
-        ax.imshow(img_E[:,:,1])
-        ax.set_title('Channel 2')
+            # DENOISED
+            ax = fig.add_subplot(4,3,4, aspect=1)
+            ax.axis('off')
+            ax.imshow(img_E[:,:,0])
+            ax.set_title('Channel 1')
+            axes.append(ax)
 
-        ax = fig.add_subplot(4,3,6, aspect=1)
-        ax.imshow(util.fill_in(img_E))
-        ax.set_title('Combined (zeroed ch3)')
+            ax = fig.add_subplot(4,3,5, aspect=1)
+            ax.axis('off')
+            ax.imshow(img_E[:,:,1])
+            ax.set_title('Channel 2')
+            axes.append(ax)
 
-        # GROUND TRUTH
-        ax = fig.add_subplot(4,3,7, aspect=1)
-        ax.imshow(img_H[:,:,0])
-        ax.set_title('Channel 1')
+            ax = fig.add_subplot(4,3,6, aspect=1)
+            ax.axis('off')
+            ax.imshow(util.fill_in(img_E))
+            ax.set_title('Combined (zeroed ch3)')
+            axes.append(ax)
 
-        ax = fig.add_subplot(4,3,8, aspect=1)
-        ax.imshow(img_H[:,:,1])
-        ax.set_title('Channel 2')
+            # GROUND TRUTH
+            ax = fig.add_subplot(4,3,7, aspect=1)
+            ax.axis('off')
+            ax.imshow(img_H[:,:,0])
+            ax.set_title('Channel 1')
+            axes.append(ax)
 
-        ax = fig.add_subplot(4,3,9, aspect=1)
-        ax.imshow(util.fill_in(img_H))
-        ax.set_title('Combined (zeroed ch3)')
+            ax = fig.add_subplot(4,3,8, aspect=1)
+            ax.axis('off')
+            ax.imshow(img_H[:,:,1])
+            ax.set_title('Channel 2')
+            axes.append(ax)
 
-        # DENOISED - GROUND TRUTH
-        ax = fig.add_subplot(4,3,10, aspect=1)
-        ax.imshow(img_E[:,:,0] - img_H[:,:,0], cmap = 'jet')
-        ax.set_title('Channel 1')
+            ax = fig.add_subplot(4,3,9, aspect=1)
+            ax.axis('off')
+            ax.imshow(util.fill_in(img_H))
+            ax.set_title('Combined (zeroed ch3)')
+            axes.append(ax)
 
-        ax = fig.add_subplot(4,3,11, aspect=1)
-        ax.imshow(img_E[:,:,1] - img_H[:,:,1], cmap = 'jet')
-        ax.set_title('Channel 2')
+            error_axs = []
+            # DENOISED - GROUND TRUTH
+            ax = fig.add_subplot(4,3,10, aspect=1)
+            ax.axis('off')
+            estimated = img_E.astype('float64')
+            ground_truth = img_H.astype('float64')
+            im = ax.imshow(np.absolute(estimated[:,:,0] - ground_truth[:,:,0]) / 255, cmap = 'jet', vmin=0, vmax=0.3)
+            ax.set_title('Channel 1')
+            axes.append(ax)
+            error_axs.append(ax)
 
-        ax = fig.add_subplot(4,3,12, aspect=1)
-        ax.imshow(util.fill_in(img_E) - util.fill_in(img_H), cmap = 'jet')
-        ax.set_title('Combined (zeroed ch3)')
+            ax = fig.add_subplot(4,3,11, aspect=1)
+            ax.axis('off')
+            ax.imshow(np.absolute(estimated[:,:,1] - ground_truth[:,:,1]) / 255, cmap = 'jet', vmin=0, vmax=0.3)
+            ax.set_title('Channel 2')
+            axes.append(ax)
+            error_axs.append(ax)
 
-        fig.set_facecolor('w')
-        plt.tight_layout(pad=0.5)
-        plt.show()
+            ax = fig.add_subplot(4,3,12, aspect=1)
+            ax.axis('off')
+            im_error = np.absolute(estimated.astype('float64') - ground_truth.astype('float64')) / 255
+            im_error = np.mean(im_error, axis = 2)
+            ax.imshow(im_error, cmap = 'jet', vmin=0, vmax=0.3)
+            ax.set_title('Mean Error (zeroed ch3)')
+            axes.append(ax)
+            error_axs.append(ax)
+
+            plt.tight_layout()
+
+            cbar = fig.colorbar(im, ax=error_axs, shrink=0.5, orientation='horizontal')
+
+            fig.set_facecolor('w')
+            plt.show()
 
         # util.imsave(img_E, os.path.join(E_path, img_name + f'_denoised{noise_level_img}_' + ext))
 

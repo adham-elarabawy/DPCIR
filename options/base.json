@@ -1,0 +1,38 @@
+{
+  "logging": {
+    "wandb": true,
+    "username": "aelarabawy",
+    "period": 10,                // logging period
+    "verbose": 1                 // verbosity of commandline prints {0 = no prints, 1 = lots of prints}
+  },
+
+  "datasets": {
+    "train": "/mikQNAP/aelarabawy/DPCIR/train/DIV2K/DIV2K_train_HR",
+    "test": "/mikQNAP/aelarabawy/DIV2K_valid_HR"
+  },
+
+  "hyperparams": {
+    "epochs": 1000000,           // num epochs
+    "seed": 1234,                // random seed
+    "batch_size": 64,            // batch size
+    "patch_res": 128,            // resolution of patches used for training
+    "learning_rate": 1e-4,       // initial learning rate
+    "lr_period": 100000,         // learning rate update period
+    "lr_gamma": 0.5              // how much to decrease learning rate every lr_period
+  },
+
+  "save": {
+    "period": 5000
+  },
+
+  "test": {
+    "period": 5000
+  },
+
+  "model": {
+    "in_numChannels": 3,         // number of input channels
+    "out_numChannels": 2,        // number of output channels
+    "nc": [64, 128, 256, 512],   // feature map dims for each subsequent resblock set (match the dim of nb)
+    "numResBlocks": 4            // number of res blocks in each downsample stage
+  }
+}

@@ -8,7 +8,7 @@ import numpy as np
 import math
 import cv2
 
-def parse(opt_path, is_train=True):
+def parse(opt_path):
 
     # ----------------------------------------
     # remove comments starting with '//'
@@ -29,13 +29,6 @@ def parse(opt_path, is_train=True):
     # ----------------------------------------
     opt['datasets']['train'] = os.path.expanduser(opt['datasets']['train'])
     opt['datasets']['test'] = os.path.expanduser(opt['datasets']['test'])
-
-    # ----------------------------------------
-    # GPU devices
-    # ----------------------------------------
-    gpu_list = ','.join(str(x) for x in opt['gpu_ids'])
-    os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
-    print('export CUDA_VISIBLE_DEVICES=' + gpu_list)
 
     return opt
 
