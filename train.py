@@ -78,7 +78,7 @@ def train(config, model):
                 save(config, model, epoch, currStep, loss, optimizer)
 
                 # evaluating on test dataset
-                test(config, model, test_loader)
+                test(config, model, device, loss_fn, epoch, currStep, test_loader)
 
                 # set model back into train mode
                 model.train()
