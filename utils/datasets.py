@@ -15,7 +15,7 @@ class DatasetPatchNoise(data.Dataset):
     # -----------------------------------------
     """
 
-    def __init__(self, opt, train=True):
+    def __init__(self, opt, train=True, addNoiseLevelMap=True):
 
         super(DatasetPatchNoise, self).__init__()
         self.opt = opt
@@ -29,6 +29,8 @@ class DatasetPatchNoise(data.Dataset):
             self.im_path = opt['datasets']['train']
         else:
             self.im_path = opt['datasets']['test']
+
+        self.addNoiseLevelMap = addNoiseLevelMap
 
         # -------------------------------------
         # get the path of H, return None if input is None
@@ -107,7 +109,8 @@ class DatasetPatchNoise(data.Dataset):
         # concat L and noise level map M
         # -------------------------------------
         """
-        img_L = torch.cat((img_L, noise_level_map), 0)
+        if self.addNoiseLevelMap:
+            img_L = torch.cat((img_L, noise_level_map), 0)
 
         return {'L': img_L, 'H': img_H, 'L_path': L_path, 'H_path': H_path}
 

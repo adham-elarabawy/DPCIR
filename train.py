@@ -49,6 +49,7 @@ def train(config, model):
     # Keep track of model with wandb
     wandb.watch(model, loss_fn, log="all", log_freq=10)
 
+    currStep = 0
     for epoch in range(config['hyperparams']['epochs']):
         totalLoss = 0
 
@@ -70,9 +71,6 @@ def train(config, model):
                 # updating total loss
                 totalLoss += loss.item()
 
-                # computing (global) step number
-                currStep = epoch * len(train_loader) + step
-
                 # logging and saving
                 log(config, epoch, currStep, scheduler, loss.item())
                 save(config, model, epoch, currStep, loss, optimizer)
@@ -83,9 +81,11 @@ def train(config, model):
                 # set model back into train mode
                 model.train()
 
-
                 # update progress bar
                 steps.set_postfix(loss=totalLoss / (step+1))
+
+                # update current step count
+                currStep += 1
 
 def log(config, epoch, currStep, scheduler, loss):
     if currStep % config['logging']['period'] == 0:
@@ -113,8 +113,8 @@ def get_model(config):
 
 def create_loaders(config):
     # Create Datasets
-    train_set = datasets.DatasetPatchNoise(config, train=True)
-    test_set = datasets.DatasetPatchNoise(config, train=False)
+    train_set = datasets.DatasetPatchNoise(config, train=True, addNoiseLevelMap=False)
+    test_set = datasets.DatasetPatchNoise(config, train=False, addNoiseLevelMap=False)
 
     # Define Training Dataloader
     train_loader = DataLoader(train_set,
@@ -216,7 +216,8 @@ if __name__ == '__main__':
         "batch_size": config['hyperparams']['batch_size'],
         "num_channels": config['model']['numChannels'],
         "sigma": config['hyperparams']['sigma'],
-        "sigma_test": config['hyperparams']['sigma_test']
+        "sigma_test": config['hyperparams']['sigma_test'],
+        "noise_level_map": 0
     }
 
     # get model
